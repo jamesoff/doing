@@ -84,23 +84,31 @@ class DoingEngine:
                 output[entry["day"].lower()].append({ "project": projectname, "start": entry["start"], "end": entry["end"], "comment": entry["comment"] })
         return output
 
-
     def summarise_doing(self):
         weekly_total = 0
         r = self.pivot_by_day()
         for day in ["mon", "tue", "wed", "thu", "fri"]:
             print "%s:" % day.capitalize()
             running_total = 0
+            summary = {}
             for entry in r[day]:
                 start_time = self.datetime_from_string(entry["start"])
                 end_time = self.datetime_from_string(entry["end"])
                 duration = (end_time - start_time).seconds / 3600.0
                 running_total += duration
                 weekly_total += duration
-                print "\t%.2fh on %s %s" % (duration, entry["project"], entry["comment"])
+                if not entry["project"] in summary:
+                    summary[entry["project"]] = { "duration": duration, "items": [] }
+                else:
+                    summary[entry["project"]]["duration"] += duration
+                if entry["comment"] not in summary[entry["project"]]["items"]:
+                    summary[entry["project"]]["items"].append(entry["comment"])
+                #print "\t%.2fh on %s %s" % (duration, entry["project"], entry["comment"])
+            for project in summary.iterkeys():
+                print "%s: %.2f (%s)" % (project, summary[project]["duration"], "; ".join(summary[project]["items"]))
             print "Total time spent on %s: %.2fh" % (day, running_total)
-            if running_total < 37.5:
-                print "  Short by %0.2fh" % (37.5 - running_total)
+            if running_total < 7.5:
+                print "  Short by %0.2fh" % (7.5 - running_total)
             print
         print "Weekly total time: %0.2fh" % weekly_total
 
@@ -108,5 +116,6 @@ class DoingEngine:
 if __name__ == "__main__":
     d = DoingEngine()
     d.parse_doing("doing.txt")
+    d.summarise_doing()
 
 
